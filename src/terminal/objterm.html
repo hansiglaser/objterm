@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta http-equiv="Content-type" content="text/html; charset=utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ObjTerm</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/dygraph/2.1.0/dygraph.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/dygraph/2.1.0/dygraph.min.css" />
+  <script src="objterm.js"></script>
+</head>
+<body>
+  <style type="text/css">
+    body {
+      background: #444444;
+      padding: 0px;
+      margin: 0px;
+    }
+    p {
+      margin: 0px;
+    }
+    ul {
+      margin: 0px;
+    }
+    #othead {
+      position: fixed;
+      left: 0;
+      right: 0;
+      top: 0;
+      height: 30px;
+      color: #FFFFFF;
+      background: #333333;
+      padding: 5px;
+    }
+    #otterm {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 40px;
+      bottom: 40px;
+      overflow-y: scroll;
+      background: #333333;
+      margin: 0px;
+      padding: 5px;
+    }
+    #otfoot {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 30px;
+      color: #FFFFFF;
+      background: #333333;
+      padding: 5px;
+    }
+    #otinputbar {
+      color: #FFFFFF;
+      font-family: courier;
+      margin: 2px;
+      padding: 2px;
+      display: none;
+    }
+    #otprompt {
+      color: #FFFFFF;
+      font-family: courier;
+      margin: 2px;
+      padding: 2px;
+      float:left;
+      font-size: medium;
+    }
+    #otinput {
+      background: #444444;
+      color: #FFFFFF;
+      font-family: courier;
+      width: 80%;
+      border: none;
+      float:left;
+      font-size: medium;
+    }
+    #otinput::placeholder {
+      font-style: italic;
+    }
+    .otbox {
+      background: #444444;
+      border-style: solid;
+      border-color: #7F7F7F;
+      border-width: 1px;
+      border-radius: 7px;
+      margin: 2px;
+      padding: 0px;
+    }
+    .othidebox .otbox {
+      border-style: none;
+      border-radius: 0px;
+      margin: 0px;
+      padding: 0px;
+    }
+    .otmeta {
+      padding: 2px;
+      padding-bottom: 0px;
+      margin: 5px;
+      margin-bottom: 0px;
+      color: #C0FFC0;
+      font-size: smaller;
+    }
+    .othidebox .otmeta {
+      display:none;
+    }
+    .otobject {
+      background: #222222;
+      margin: 5px;
+      margin-top: 2px;
+      padding: 3px;
+    }
+    .othidebox .otobject {
+      margin: 0px;
+      padding-top: 0px;
+      padding-bottom: 0px;
+    }
+    .otostring {
+      color: #E0E0E0;
+      font-family: courier;
+    }
+    .otohtml {
+      color: #FFFFFF;
+    }
+    .otodygraph {
+      margin:5px;
+    }
+    .otmsgnote {
+      background: #333333;
+      color: #E0E0A0;
+    }
+    .otmsgwarning {
+      background: #6F6F33;
+      color: #F0F0A0;
+    }
+    .otmsgerror {
+      background: #7F3F3F;
+      color: #FFFF80;
+    }
+    .otmsgfatal {
+      background: #7F3F7F;
+      color: #FFFF00;
+    }
+  </style>
+  <script>
+    rtl.showUncaughtExceptions=true;
+    window.addEventListener("load", rtl.run);
+  </script>
+  <div id="othead">
+    <div id="ottitle" style="float:left;">
+      <span style="font-weight:bold;font-size:170%;">ObjTerm</span>
+    </div>
+    <div id="otwithboxesdiv" style="float:right;">
+      <input id="otwithboxes" name="otwithboxes" type="checkbox" checked />
+      <label for="otwithboxes">Show boxes</label>
+    </div>
+    <div id="otwebsocket" style="float:right;">
+      <input id="otwsurl" name="otwsurl" type="text" value="ws://localhost:5005" />
+      <input id="otwsconn" name="otwsconn" type="checkbox" />
+      <label for="otwsconn">Connected</label>
+    </div>
+  </div>
+  <div id="otterm">
+    <div id="pasjsconsole"></div>
+  </div>
+  <div id="otfoot">
+    <div id="otinputbar">
+      <div id="otprompt">&gt;</div>
+      <input id="otinput" name="otinput" type="text" placeholder="Command..."/>
+    </div>
+  </div>
+</body>
+</html>
+
