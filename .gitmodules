@@ -1,0 +1,6 @@
+[submodule "src/demos/LazWebsockets"]
+	path = src/demos/LazWebsockets
+	url = https://github.com/Warfley/LazWebsockets.git
+[submodule "src/demos/pas-gpib"]
+	path = src/demos/pas-gpib
+	url = https://github.com/hansiglaser/pas-gpib.git
