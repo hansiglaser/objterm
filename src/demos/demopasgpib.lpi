@@ -40,7 +40,7 @@
     </Target>
     <SearchPaths>
       <IncludeFiles Value="$(ProjOutDir)"/>
-      <OtherUnitFiles Value="../program;../../LazWebsockets/src;pas-gpib/base;pas-gpib/devcom;pas-gpib/gpib;pas-gpib/instruments;pas-gpib/instruments/agilent;pas-gpib/usb;pas-gpib/pas-libusb/src"/>
+      <OtherUnitFiles Value="../program;./LazWebsockets/src;pas-gpib/base;pas-gpib/devcom;pas-gpib/gpib;pas-gpib/instruments;pas-gpib/instruments/agilent;pas-gpib/usb;pas-gpib/pas-libusb/src"/>
       <UnitOutputDirectory Value="lib/$(TargetCPU)-$(TargetOS)"/>
     </SearchPaths>
   </CompilerOptions>
