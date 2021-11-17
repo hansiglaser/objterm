@@ -40,7 +40,7 @@ How it Works
 - The **ObjTerm** also provides a command line input, which sends the user
   input to the program.
 - Disclaimer: The current state of development is rather a proof of concept
-  than a finished project. See the TODOs section below.
+  than a finished project. See the [TODOs](#todos) section below.
 - Disclaimer: Conventional terminals do support a bit more than just text,
   e.g., colors, cursor placement, clear screen, mouse input with GPM, ...,
   and XTerm can even do 
@@ -75,7 +75,8 @@ Prerequisites
   [Pas2js](https://wiki.lazarus.freepascal.org/pas2js) transpiler is required
   (tested with version 2.0.6). See below for hints how to install and a Lazarus
   integration.
-  - A pre-compiled JavaScript file is provided at <span style="background:#FFFF00;">**⚠️🔴TODO🔴⚠️**</span>.
+  - A pre-compiled JavaScript file is provided at
+    [src/demos/objterm.js](src/demos/objterm.js).
 
 Dependencies
 ------------
@@ -105,12 +106,29 @@ Pas2js Hints
 
 Installation
 ------------
-**TODO**
-  - git clone, submodules
-    - submodules: see also https://gitlab.com/freepascal.org/fpc/pas2js#complete-checkout
-    - See the
-      [pas-gpib README](https://github.com/hansiglaser/pas-gpib#references) for
-      some additional hints.
+
+Clone the Github repository, and recursively clone the [Git
+Submodules](http://git-scm.com/book/en/Git-Tools-Submodules).
+
+    git clone --recurse-submodules https://github.com/hansiglaser/objterm.git
+
+If you only cloned the main repository, you can clone the submodules manually.
+Some background information on submodules is provided at at
+https://gitlab.com/freepascal.org/fpc/pas2js#complete-checkout and the
+[pas-gpib README](https://github.com/hansiglaser/pas-gpib#references).
+
+    git clone https://github.com/hansiglaser/objterm.git
+    cd objterm/
+    git submodule init
+    git submodule update
+    cd src/demos/pas-gpib
+    git submodule init
+    git submodule update
+
+Use the Lazarus project file in [`src/terminal/*.lpi`](src/terminal/*.lpi) to
+compile (with Pas2js) the terminal, and in [`src/demos/*.lpi`](src/demos/*.lpi)
+to compile the demos.
+
 
 Demos
 =====
@@ -218,10 +236,11 @@ To start an **ObjTerm** terminal, simply visit
 JavaSript application.
 
 To safe you from having to compile **ObjTerm** from Pascal to JavaScript, a
-pre-compiled JavaScript file is provided at ⚠️🔴TODO🔴⚠️. It is intentionally at
-a different directory as `objterm.html` to prevent you from accidential
+pre-compiled JavaScript file is provided at
+[src/demos/objterm.js](src/demos/objterm.js). It is intentionally at
+a different directory as `objterm.html` to prevent you from an accidential
 execution of JavaScript code without having read that. Please **manually copy**
-`⚠️🔴TODO🔴⚠️/objterm.js` to the directory `src/terminal`.
+it to the directory `src/terminal` after cloning the Git repository.
 
 When the browser has displayed the page, then edit the WebSocket URL in the top
 to show your application's server URL. Then enable the checkbox "**Connected**".
