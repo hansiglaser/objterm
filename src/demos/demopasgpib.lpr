@@ -37,13 +37,6 @@ Const
   Port = 5025;
 {$ENDIF TCP}
 
-/// Helper Function to convert TAgilentMSOX3000A.Screen for use with EncodeStringBase64
-Function ToString(A:TDynByteArray):String;
-Begin
-  SetLength(Result, Length(A));
-  Move(A[0], Result[1], Length(A));
-End;
-
 /// Helper Function to convert a TWaveform for use with Dygraph
 Function Waveform2JSONArray(AWaveform:TWaveform) : TJSONArray;
 Var I : Integer;
