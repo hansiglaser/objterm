@@ -103,6 +103,7 @@ Type
     TCmdThreadList = specialize TThreadedObject<TCmdList>;
   var
     FVerbose          : Boolean;            // defaults to false
+    FOutput           : Text;               // defaults to Output, used for our own WriteLn
     FOnConnect        : TOnConnect;
     FConnectEvent     : PRTLEvent;
     FOnDisconnect     : TOnDisconnect;
@@ -131,6 +132,8 @@ Type
     Function AppendOTDygraph(AWidth : Integer; AHeight : Integer; AData : TJSONArray; AOptions : TJSONData) : TOTObject;
     Function AppendMsg(Const ASeverity:TMsgSeverity;Const AMessage:String) : TOTObject;
 
+    Procedure Assign(Var F : Text);
+
     Function WaitForConnect(ATimeout : LongInt = 0) : Boolean;
     Function IsConnected : Boolean;
 
@@ -147,6 +150,7 @@ Type
     Function SendMessage(AMsg : TJSONObject) : Boolean;
 
     property Verbose          : Boolean           read FVerbose          write FVerbose;
+    property Output           : Text              read FOutput           write FOutput;
     property HelloIdent       : String            read FHelloIdent       write FHelloIdent;
     property ServerVersion    : String            read FServerVersion;
     property ServerFeatures   : TStringArray      read FServerFeatures;
@@ -184,7 +188,7 @@ End;
 Function TOTWSHandler.Accept(Const ARequest: TRequestData; Const ResponseHeaders: TStrings): boolean;
 Begin
   if FObjTerm.FVerbose then
-    WriteLn('Accept at ', ARequest.Host,' ',ARequest.Path);
+    WriteLn(FObjTerm.FOutput, 'Accept at ', ARequest.Host,' ',ARequest.Path);
   Result := True;
 End;
 
@@ -216,14 +220,14 @@ Begin
         Begin
           St := FObjTerm.FSendBuf.Get;
           if FObjTerm.FVerbose then
-            WriteLn('Message to ', ACommunication.SocketStream.RemoteAddress.Address, ': ''', St, '''');
+            WriteLn(FObjTerm.FOutput, 'Message to ', ACommunication.SocketStream.RemoteAddress.Address, ': ''', St, '''');
           ACommunication.WriteStringMessage(St);
         End;
     End;
   RTLEventDestroy(FObjTerm.FSendBuf.EventAdd);
   FObjTerm.FSendBuf.EventAdd := Nil;
   if FObjTerm.FVerbose then
-    WriteLn('Disconnected from ', ACommunication.SocketStream.RemoteAddress.Address);
+    WriteLn(FObjTerm.FOutput, 'Disconnected from ', ACommunication.SocketStream.RemoteAddress.Address);
 End;
 
 Procedure TOTWSHandler.CloseAll;
@@ -269,7 +273,7 @@ Begin
             raise Exception.Create('Unknown message type '+Message.ClassName);
           End;
         if FObjTerm.FVerbose then
-          WriteLn('Message from ', Comm.SocketStream.RemoteAddress.Address, ': ''', TWebsocketStringMessage(Message).Data,'''');
+          WriteLn(FObjTerm.FOutput, 'Message from ', Comm.SocketStream.RemoteAddress.Address, ': ''', TWebsocketStringMessage(Message).Data,'''');
         if FObjTerm.HandleMessage(GetJSON(TWebsocketStringMessage(Message).Data) as TJSONObject) then
           FObjTerm.FRecvBuf.Add(TWebsocketStringMessage(Message).Data);
       End;
@@ -304,7 +308,7 @@ Procedure TOTWSThread.Execute;
 Begin
   FObjTerm.StartWebSocketServer;
   if FObjTerm.FVerbose then
-    WriteLn('Exiting Web Socket Thread');
+    WriteLn(FObjTerm.FOutput, 'Exiting Web Socket Thread');
 End;
 
 
@@ -341,14 +345,22 @@ End;
 Constructor TObjTerm.Create(APort:Word);
 Begin
   FPort    := APort;
+  FOutput  := System.Output;   // store a copy to StdOut for our own WriteLn
   FSendBuf := TStringRingBuffer.Create(16);
   FRecvBuf := TStringRingBuffer.Create(16);
   FCmdList := TCmdThreadList.Create(TCmdList.Create);
   FConnectEvent := RTLEventCreate;
 End;
 
+Procedure ObjTermWrite(Var F : TextRec); forward;
+
 Destructor TObjTerm.Destroy;
 Begin
+  if TextRec(System.Output).InOutFunc = Pointer(@ObjTermWrite) then
+    Begin
+      WriteLn(FOutput, 'Error: System.Output is still assigned to this object in Destroy. Resetting to our internal copy. You should Assign() something else before Free()ing this object.');
+      System.Output := FOutput;
+    End;
   if assigned(FWST) then
     Begin
       FWST.Terminate;
@@ -373,7 +385,7 @@ End;
 Procedure TObjTerm.StartWebSocketServer;
 Begin
   if FVerbose then
-    WriteLn('Starting WebSocket server on port ',FPort);
+    WriteLn(FOutput, 'Starting WebSocket server on port ',FPort);
   FWSS := TWebSocketServer.Create(FPort);
   try
     FWSS.Socket.ReuseAddress := True;    // allow using the same port immediately if the program restarts
@@ -382,7 +394,7 @@ Begin
     FWSH := TOTWSHandler.Create(Self);
     FWSS.RegisterHandler('*', '*', FWSH, True, True);
     if FVerbose then
-      WriteLn('Web Socket Server started');
+      WriteLn(FOutput, 'Web Socket Server started');
     FWSS.Start;
   finally
     FWSS.Free;
@@ -434,6 +446,114 @@ Begin
   OS := TOTOString.Create(AMessage);
   OS.FCSSClasses := [CMsgSeverityCSSClass[ASeverity]];
   Result :=  AppendObj(OS);
+End;
+
+// Store reference to TObjTerm object to textrec
+Procedure SetObjTerm(Var F : TextRec; OT : TObjTerm);
+Begin
+  Move(OT, TextRec(F).UserData[1], SizeOf(OT));
+End;
+
+// Extract TObjTerm object reference from textrec
+Function GetObjTerm(Var F : TextRec) : TObjTerm;
+Begin
+  Move(F.UserData[1], Result, SizeOf(Result));
+End;
+
+// Store reference to TOTOString object to textrec
+Procedure SetOTOString(Var F : TextRec; OS : TOTOString);
+Begin
+  Move(OS, TextRec(F).UserData[1+8], SizeOf(OS));
+End;
+
+// Extract last TOTOString object reference from textrec
+Function GetLastOTOString(Var F : TextRec) : TOTOString;
+Begin
+  Move(F.UserData[1+8], Result, SizeOf(Result));
+End;
+
+// Write function for ObjTerm associated file
+Procedure ObjTermWrite(Var F : TextRec);
+Var StartIdx : Integer;
+    Idx      : Integer;
+    OT       : TObjTerm;
+    OS       : TOTOString;
+
+  Procedure AppendFromBuf;
+  Var St : String;
+  Begin
+    SetLength(St, Idx - StartIdx);
+    Move(F.BufPtr^[StartIdx], St[1], Idx - StartIdx);
+    //WriteLn(StdErr, 'Appending string '''+St+''' with OT = $',IntToHex(PtrUInt(OT), 8));
+    if assigned(OS) then
+      OS.Append(St)
+    else
+      OS := TOTOString(OT.AppendOTString(St));
+  End;
+
+Begin
+  StartIdx := 0;
+  Idx := StartIdx;
+  OT := GetObjTerm(F);
+  OS := GetLastOTOString(F);
+  if not Assigned(OT) then
+    Exit;   // ignore if no object (should not happen)
+  if not OT.IsConnected then         // this will deadlock if this object is still assigned to System.Output in Destroy
+    Exit;   // ignore if not connected
+  While Idx < F.BufPos do
+    Begin
+      if F.BufPtr^[Idx] = #10 then
+        Begin
+          AppendFromBuf;
+          OS := Nil;   // start a new line with the next text
+          StartIdx := Idx+1;   // +1 to skip #10
+        End;
+      Inc(Idx);
+    End;
+  if Idx > StartIdx then
+    Begin
+      // more text without a #10
+      AppendFromBuf;
+    End;
+  SetOTOString(F, OS);
+  F.BufPos := 0;
+End;
+
+
+// Close ObjTerm associated file
+Procedure ObjTermClose(Var F : TextRec);
+Begin
+  F.Mode := fmClosed;
+End;
+
+/// Open ObjTerm associated file
+Procedure ObjTermOpen(Var F : TextRec);
+Begin
+  if F.Mode = fmOutput Then
+    Begin
+      TextRec(F).InOutFunc := @ObjTermWrite;
+      TextRec(F).FlushFunc := @ObjTermWrite;
+    End
+  else
+    Begin
+      F.Mode := fmInput;
+      WriteLn(StdErr, 'Error: ObjTerm associated file openend for mode ', F.Mode);
+    End;
+  TextRec(F).CloseFunc := @ObjTermClose;
+End;
+
+(**
+ * Assign a file for writing to ObjTerm. All output to that file goes to ObjTerm instead
+ *
+ * see also unit Crt and https://forum.lazarus.freepascal.org/index.php?topic=34621.0
+ *)
+Procedure TObjTerm.Assign(Var F : Text);
+Begin
+  System.Assign(F, '');    // initialize
+  TextRec(F).OpenFunc := @ObjTermOpen;
+  // store reference to ObjTerm object and clear the rest to store more information
+  SetObjTerm  (TextRec(F), Self);
+  SetOTOString(TextRec(F), Nil);
 End;
 
 Function TObjTerm.WaitForConnect(ATimeout:LongInt = 0) : Boolean;
@@ -586,8 +706,8 @@ Function TObjTerm.SendMessage(AMsg : TJSONObject) : Boolean;
 Begin
   //if FVerbose then
   //  Begin
-  //    WriteLn('Sending JSON:');
-  //    WriteLn(AMsg.FormatJSON);
+  //    WriteLn(FOutput, 'Sending JSON:');
+  //    WriteLn(FOutput, AMsg.FormatJSON);
   //  End;
   Result := FSendBuf.Add(AMsg.AsJSON);
 End;
